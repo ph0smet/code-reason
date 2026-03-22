@@ -22,6 +22,15 @@ java {
     }
 }
 
+kotlin {
+    compilerOptions {
+        freeCompilerArgs = listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=kotlin.uuid.ExperimentalUuidApi",
+        )
+    }
+}
+
 dependencies {
     // CPG (resolved via composite build)
     implementation("de.fraunhofer.aisec:cpg-core")
