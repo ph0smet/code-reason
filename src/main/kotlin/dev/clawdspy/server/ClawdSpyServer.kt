@@ -1,6 +1,7 @@
 package dev.clawdspy.server
 
 import dev.clawdspy.tools.addAnalyzeProjectTool
+import dev.clawdspy.tools.addFindEntryPointsTool
 import dev.clawdspy.tools.addGetFindingDetailTool
 import dev.clawdspy.tools.addListChecksTool
 import dev.clawdspy.tools.addScanInjectionsTool
@@ -23,6 +24,7 @@ fun configureServer(): Server {
 
     return Server(info, options).apply {
         addAnalyzeProjectTool()
+        addFindEntryPointsTool()
         addScanInjectionsTool()
         addTraceTaintPathTool()
         addGetFindingDetailTool()
