@@ -1,9 +1,12 @@
 package dev.clawdspy.server
 
 import dev.clawdspy.tools.addAnalyzeProjectTool
+import dev.clawdspy.tools.addFindCalleesTool
+import dev.clawdspy.tools.addFindCallersTool
 import dev.clawdspy.tools.addFindEntryPointsTool
 import dev.clawdspy.tools.addGetFindingDetailTool
 import dev.clawdspy.tools.addListChecksTool
+import dev.clawdspy.tools.addQueryDataflowTool
 import dev.clawdspy.tools.addScanInjectionsTool
 import dev.clawdspy.tools.addTraceTaintPathTool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -29,5 +32,8 @@ fun configureServer(): Server {
         addTraceTaintPathTool()
         addGetFindingDetailTool()
         addListChecksTool()
+        addFindCallersTool()
+        addFindCalleesTool()
+        addQueryDataflowTool()
     }
 }
