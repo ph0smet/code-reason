@@ -61,18 +61,14 @@ fun Server.addTraceTaintPathTool() {
         } else if (payload.sourceFile != null && payload.sourceLine != null &&
             payload.sinkFile != null && payload.sinkLine != null) {
             // Custom trace by file + line
-            val sourceNode = result.nodes.find { node ->
-                node.location?.artifactLocation?.fileName?.endsWith(payload.sourceFile) == true &&
-                    node.location?.region?.startLine == payload.sourceLine
-            } ?: throw IllegalArgumentException(
-                "No node found at ${payload.sourceFile}:${payload.sourceLine}"
-            )
-            val sinkNode = result.nodes.find { node ->
-                node.location?.artifactLocation?.fileName?.endsWith(payload.sinkFile) == true &&
-                    node.location?.region?.startLine == payload.sinkLine
-            } ?: throw IllegalArgumentException(
-                "No node found at ${payload.sinkFile}:${payload.sinkLine}"
-            )
+            val sourceNode = findBestNodeAtLocation(result, payload.sourceFile, payload.sourceLine)
+                ?: throw IllegalArgumentException(
+                    "No node found at ${payload.sourceFile}:${payload.sourceLine}"
+                )
+            val sinkNode = findBestNodeAtLocation(result, payload.sinkFile, payload.sinkLine)
+                ?: throw IllegalArgumentException(
+                    "No node found at ${payload.sinkFile}:${payload.sinkLine}"
+                )
 
             val chain = traceAndBuildChain(sourceNode, sinkNode, "custom", chainBuilder)
             CallToolResult(content = listOf(TextContent(Json.encodeToString(chain))))
@@ -83,6 +79,38 @@ fun Server.addTraceTaintPathTool() {
             )
         }
     }
+}
+
+/**
+ * Find the best CPG node at a given file/line for data flow analysis.
+ *
+ * Multiple CPG nodes can exist at the same source line (e.g., a DeclarationStatement,
+ * a VariableDeclaration, a Call, and References). For data flow tracing, we prefer
+ * nodes that participate in DFG edges — typically Call nodes (which produce values)
+ * or References (which carry values). DeclarationStatements are containers that
+ * often lack direct DFG connections.
+ */
+private fun findBestNodeAtLocation(
+    result: de.fraunhofer.aisec.cpg.TranslationResult,
+    file: String,
+    line: Int,
+): Node? {
+    val candidates = result.nodes.filter { node ->
+        node.location?.artifactLocation?.fileName?.endsWith(file) == true &&
+            node.location?.region?.startLine == line
+    }
+
+    if (candidates.isEmpty()) return null
+    if (candidates.size == 1) return candidates.first()
+
+    // Prefer Call nodes — they represent function invocations that produce/consume values
+    candidates.firstOrNull { it is Call }?.let { return it }
+
+    // Then prefer nodes that have outgoing or incoming DFG edges
+    candidates.firstOrNull { it.nextDFG.isNotEmpty() || it.prevDFG.isNotEmpty() }?.let { return it }
+
+    // Fall back to first candidate
+    return candidates.first()
 }
 
 private fun traceAndBuildChain(
