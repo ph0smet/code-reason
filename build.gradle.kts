@@ -4,16 +4,20 @@ plugins {
     application
 }
 
-group = "dev.clawdspy"
+group = "io.github.blindhacker99.codereason"
 version = "0.1.0"
 
 application {
-    mainClass.set("dev.clawdspy.ApplicationKt")
+    mainClass.set("io.github.blindhacker99.codereason.ApplicationKt")
     applicationDefaultJvmArgs = listOf("-Xss515m", "-Xmx8g")
 }
 
 repositories {
     mavenCentral()
+    maven("https://central.sonatype.com/repository/maven-snapshots/") {
+        name = "Central Portal Snapshots"
+        mavenContent { snapshotsOnly() }
+    }
 }
 
 java {
@@ -31,13 +35,17 @@ kotlin {
     }
 }
 
+// CPG: temporarily pinned to main-SNAPSHOT until 11.x stable lands on Maven Central.
+// Source: Sonatype Central Portal Snapshots (configured in repositories above).
+val cpgVersion = "main-SNAPSHOT"
+
 dependencies {
-    // CPG (resolved via composite build)
-    implementation("de.fraunhofer.aisec:cpg-core")
-    implementation("de.fraunhofer.aisec:cpg-analysis")
-    implementation("de.fraunhofer.aisec:cpg-concepts")
-    runtimeOnly("de.fraunhofer.aisec:cpg-language-java")
-    runtimeOnly("de.fraunhofer.aisec:cpg-language-python")
+    // CPG
+    implementation("de.fraunhofer.aisec:cpg-core:$cpgVersion")
+    implementation("de.fraunhofer.aisec:cpg-analysis:$cpgVersion")
+    implementation("de.fraunhofer.aisec:cpg-concepts:$cpgVersion")
+    runtimeOnly("de.fraunhofer.aisec:cpg-language-java:$cpgVersion")
+    runtimeOnly("de.fraunhofer.aisec:cpg-language-python:$cpgVersion")
 
     // MCP SDK
     implementation("io.modelcontextprotocol:kotlin-sdk:0.9.0")
@@ -62,4 +70,5 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    maxHeapSize = "4g"
 }
