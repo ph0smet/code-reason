@@ -1,8 +1,6 @@
-# Program analysis for coding agents
+# Program analysis for your coding agents.
 
-**code-reason** is an [MCP](https://modelcontextprotocol.io) server that gives coding agents — like Claude Code — the program-analysis primitives they need to *reason about code* instead of guessing at it.
-
-## What it is
+**code-reason** is an MCP server that gives coding agents real program-analysis reasoning — so they verify data flow, trace evidence chains, and navigate call graphs from ground truth, not guesswork.
 
 Coding agents are good at reading code, but they struggle with whole-program questions:
 
@@ -10,17 +8,38 @@ Coding agents are good at reading code, but they struggle with whole-program que
 - *Who really invokes this function across the codebase?*
 - *What is the complete evidence chain from source to sink?*
 
-These are program-analysis questions. Answering them with grep-and-guess, or with ever-larger context windows, scales poorly and produces false confidence. They are better answered with a code property graph and a few well-chosen graph queries.
+These are program-analysis questions. Answering them with grep-and-guess, or with ever-larger context windows, scales poorly and produces false confidence. They are better answered with a code property graph and a few well-chosen graph queries — exposed as MCP tools the agent drives directly.
 
-code-reason exposes those queries as MCP tools. The agent decides *what* to ask; code-reason mechanically answers:
+**Tech stack.** code-reason uses [Fraunhofer AISEC's Code Property Graph](https://github.com/Fraunhofer-AISEC/cpg) for multi-language data-flow, control-flow, and taint analysis, and the [Kotlin MCP SDK](https://github.com/modelcontextprotocol/kotlin-sdk) to expose those capabilities as agent-callable tools.
 
-- **Data-flow reachability** instead of hopeful pattern matching.
-- **Call-graph navigation** instead of grep-based caller discovery.
-- **Evidence chains** that demonstrate a vulnerability rather than assert one.
+**Long-term vision.** Make program-analysis primitives a first-class capability for coding agents — sharpening vulnerability detection precision, eliminating tokens wasted on speculative grep-and-guess exploration, and turning vulnerability hunting into a directed, evidence-driven workflow.
 
-The philosophy is simple: the LLM provides the reasoning, code-reason provides the ground truth. Program analysis becomes a tool the agent drives, not a black-box scanner.
+## How it works
 
-code-reason is built on [Fraunhofer AISEC's Code Property Graph (CPG)](https://github.com/Fraunhofer-AISEC/cpg) and supports Java and Python out of the box.
+code-reason sits between the coding agent and a code property graph. The agent drives — code-reason answers.
+
+```
+   Coding agent (Claude Code, Cursor, ...)
+              │  MCP over stdio
+              ▼
+       code-reason server
+              │
+              ▼
+   Fraunhofer CPG (Java + Python frontends)
+              │
+              ▼
+        Target codebase
+```
+
+A typical loop runs in three phases:
+
+1. **Analyze.** The agent calls `reason_analyze_project`. CPG parses the target codebase into a multi-graph: abstract syntax, control flow, data flow, and evaluation order — all in one queryable structure.
+
+2. **Query.** The agent calls one or more `reason_*` tools, each of which translates to a focused graph operation: taint propagation, call-graph traversal, data-flow reachability, evidence-chain construction.
+
+3. **Reason.** Each tool returns a structured result (locations, paths, confidence, evidence). The agent combines those results with its own contextual reasoning and decides what to ask next.
+
+The agent provides the *intent* and high-level reasoning; code-reason provides *ground-truth answers* against the actual graph. No grep-and-guess, no oversized context dumps.
 
 ## Tools
 
@@ -42,7 +61,7 @@ code-reason exposes nine MCP tools, grouped by purpose:
 
 - JDK 21
 
-CPG artifacts are fetched from Maven Central — no sibling checkouts required.
+The build pulls CPG artifacts from Maven Central and Sonatype Central Snapshots (the latter for `main-SNAPSHOT` until CPG 11.x lands as a stable release on Central). No sibling checkouts required.
 
 ## Build
 
@@ -51,6 +70,14 @@ CPG artifacts are fetched from Maven Central — no sibling checkouts required.
 ```
 
 The launcher lands at `build/install/code-reason/bin/code-reason`.
+
+## Running tests
+
+```
+./gradlew test
+```
+
+Twelve integration tests run the full pipeline against small Java and Python fixtures.
 
 ## Claude Code setup
 
@@ -86,18 +113,15 @@ At any step the agent can pivot through the graph on its own using `reason_find_
 - Java
 - Python
 
-Additional CPG frontends (C/C++, Go, TypeScript, JVM, LLVM, Ruby) can be wired in with minimal changes to `build.gradle.kts`.
+Additional CPG frontends (C/C++, Go, TypeScript, JVM, LLVM, Ruby) can be enabled by adding the corresponding `cpg-language-*` dependency in `build.gradle.kts`.
 
 ## Status
 
-code-reason is v0.1.0 — early, research-grade. Known limitations:
-
-- Finding deduplication can surface multiple findings for a single root cause when several source specs match the same node.
-- Not production-hardened; expect sharp edges.
+code-reason is v0.1.0 — early, research-grade. The build is currently pinned to CPG `main-SNAPSHOT`; this will move to a stable `11.x` release once Fraunhofer publishes one to Maven Central.
 
 ## License
 
-MIT. See [`LICENSE`](./LICENSE).
+Apache 2.0. See [`LICENSE`](./LICENSE).
 
 ## Acknowledgments
 
