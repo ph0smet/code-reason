@@ -113,24 +113,6 @@ fun Server.addQueryDataflowTool() {
  * Find the best CPG node at a given file/line for data flow analysis.
  * Prefers Call nodes, then nodes with DFG edges.
  */
-private fun findBestNodeAtLocation(
-    result: de.fraunhofer.aisec.cpg.TranslationResult,
-    file: String,
-    line: Int,
-): Node? {
-    val candidates = result.nodes.filter { node ->
-        node.location?.artifactLocation?.fileName?.endsWith(file) == true &&
-            node.location?.region?.startLine == line
-    }
-
-    if (candidates.isEmpty()) return null
-    if (candidates.size == 1) return candidates.first()
-
-    candidates.firstOrNull { it is Call }?.let { return it }
-    candidates.firstOrNull { it.nextDFG.isNotEmpty() || it.prevDFG.isNotEmpty() }?.let { return it }
-    return candidates.first()
-}
-
 private fun nodeToInfo(node: Node): DataflowNodeInfo {
     return DataflowNodeInfo(
         nodeId = node.id.toString(),
