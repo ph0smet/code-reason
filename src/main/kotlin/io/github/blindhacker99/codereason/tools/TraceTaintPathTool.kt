@@ -21,46 +21,34 @@ import kotlinx.serialization.json.Json
 
 @Serializable
 data class TraceTaintPathPayload(
-    @Description("Finding ID from a previous reason_scan_injections call.")
-    val findingId: String? = null,
-    @Description("Source file path for custom trace (alternative to findingId).")
+    @Description("Source file path (e.g. src/main/java/com/example/Foo.java). Required with sourceLine, sinkFile, sinkLine.")
     val sourceFile: String? = null,
-    @Description("Source line number for custom trace.")
+    @Description("Source line number (1-based) where tainted data originates.")
     val sourceLine: Int? = null,
-    @Description("Sink file path for custom trace.")
+    @Description("Sink file path where tainted data is consumed.")
     val sinkFile: String? = null,
-    @Description("Sink line number for custom trace.")
+    @Description("Sink line number (1-based) where tainted data is consumed.")
     val sinkLine: Int? = null,
+    @Description("Optional shortcut: finding ID from a prior reason_scan_injections call. Use this only when replaying a scanner-reported finding; otherwise prefer source/sink coordinates.")
+    val findingId: String? = null,
 )
 
 fun Server.addTraceTaintPathTool() {
     addTool<TraceTaintPathPayload>(
         name = "reason_trace_taint_path",
         description =
-            "Trace the detailed taint propagation path between a source and sink, " +
-                "showing every intermediate step with code context. " +
-                "Use findingId from reason_scan_injections, or specify source/sink by file and line.",
+            "Trace the data-flow path between any two points in the code, returning every " +
+                "intermediate step with code context. Primary input: source and sink coordinates " +
+                "(sourceFile/sourceLine + sinkFile/sinkLine) — use this whenever you know where " +
+                "tainted data enters and where it is consumed, even if reason_scan_injections did " +
+                "not flag the flow. As a shortcut, pass findingId to replay a scanner-reported " +
+                "finding.",
     ) { payload ->
         val result = requireAnalysisResult()
         val chainBuilder = EvidenceChainBuilder()
 
-        if (payload.findingId != null) {
-            // Look up finding from cache and re-run detailed trace
-            val finding = lastScanFindings.find { it.id == payload.findingId }
-                ?: throw IllegalArgumentException("Finding not found: ${payload.findingId}. Run reason_scan_injections first.")
-
-            // Re-find the nodes by ID
-            val sourceNode = result.nodes.find { it.id.toString() == finding.source.nodeId }
-                ?: throw IllegalStateException("Source node no longer found: ${finding.source.nodeId}")
-            val sinkNode = result.nodes.find { it.id.toString() == finding.sink.nodeId }
-                ?: throw IllegalStateException("Sink node no longer found: ${finding.sink.nodeId}")
-
-            val chain = traceAndBuildChain(sourceNode, sinkNode, finding.vulnClass, chainBuilder)
-            CallToolResult(content = listOf(TextContent(Json.encodeToString(chain))))
-
-        } else if (payload.sourceFile != null && payload.sourceLine != null &&
+        if (payload.sourceFile != null && payload.sourceLine != null &&
             payload.sinkFile != null && payload.sinkLine != null) {
-            // Custom trace by file + line
             val sourceNode = findBestNodeAtLocation(result, payload.sourceFile, payload.sourceLine)
                 ?: throw IllegalArgumentException(
                     "No node found at ${payload.sourceFile}:${payload.sourceLine}"
@@ -73,47 +61,28 @@ fun Server.addTraceTaintPathTool() {
             val chain = traceAndBuildChain(sourceNode, sinkNode, "custom", chainBuilder)
             CallToolResult(content = listOf(TextContent(Json.encodeToString(chain))))
 
+        } else if (payload.findingId != null) {
+            val finding = lastScanFindings.find { it.id == payload.findingId }
+                ?: throw IllegalArgumentException("Finding not found: ${payload.findingId}. Run reason_scan_injections first.")
+
+            val sourceNode = result.nodes.find { it.id.toString() == finding.source.nodeId }
+                ?: throw IllegalStateException("Source node no longer found: ${finding.source.nodeId}")
+            val sinkNode = result.nodes.find { it.id.toString() == finding.sink.nodeId }
+                ?: throw IllegalStateException("Sink node no longer found: ${finding.sink.nodeId}")
+
+            val chain = traceAndBuildChain(sourceNode, sinkNode, finding.vulnClass, chainBuilder)
+            CallToolResult(content = listOf(TextContent(Json.encodeToString(chain))))
+
         } else {
             throw IllegalArgumentException(
-                "Provide either findingId or both sourceFile/sourceLine and sinkFile/sinkLine."
+                "Provide source and sink coordinates (all four of sourceFile, sourceLine, sinkFile, sinkLine), " +
+                    "or alternatively a findingId from reason_scan_injections."
             )
         }
     }
 }
 
-/**
- * Find the best CPG node at a given file/line for data flow analysis.
- *
- * Multiple CPG nodes can exist at the same source line (e.g., a DeclarationStatement,
- * a VariableDeclaration, a Call, and References). For data flow tracing, we prefer
- * nodes that participate in DFG edges — typically Call nodes (which produce values)
- * or References (which carry values). DeclarationStatements are containers that
- * often lack direct DFG connections.
- */
-private fun findBestNodeAtLocation(
-    result: de.fraunhofer.aisec.cpg.TranslationResult,
-    file: String,
-    line: Int,
-): Node? {
-    val candidates = result.nodes.filter { node ->
-        node.location?.artifactLocation?.fileName?.endsWith(file) == true &&
-            node.location?.region?.startLine == line
-    }
-
-    if (candidates.isEmpty()) return null
-    if (candidates.size == 1) return candidates.first()
-
-    // Prefer Call nodes — they represent function invocations that produce/consume values
-    candidates.firstOrNull { it is Call }?.let { return it }
-
-    // Then prefer nodes that have outgoing or incoming DFG edges
-    candidates.firstOrNull { it.nextDFG.isNotEmpty() || it.prevDFG.isNotEmpty() }?.let { return it }
-
-    // Fall back to first candidate
-    return candidates.first()
-}
-
-private fun traceAndBuildChain(
+internal fun traceAndBuildChain(
     sourceNode: Node,
     sinkNode: Node,
     vulnClass: String,
