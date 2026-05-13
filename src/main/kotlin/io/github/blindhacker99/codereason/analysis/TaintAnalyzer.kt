@@ -166,18 +166,19 @@ class TaintAnalyzer(private val result: TranslationResult) {
         queryTree: QueryTree<Boolean>,
         collector: (List<Node>) -> Unit,
     ) {
-        // QueryTree children contain SinglePathResult instances
-        // whose children contain QueryTree<List<Node>> with the actual path nodes
+        // CPG query paths interleave Node objects with edge objects (e.g.
+        // ContextSensitiveDataflow) since the main-SNAPSHOT API change.
+        // filterIsInstance<Node>() drops the edges so downstream code sees a
+        // clean List<Node>; an unchecked cast here would silently accept an
+        // edge as a Node and ClassCastException at the call site.
         if (queryTree.value) {
             for (child in queryTree.children) {
                 if (child.value == true) {
-                    // This child's children contain the path as QueryTree<List<Node>>
                     for (pathChild in child.children) {
                         val pathValue = pathChild.value
                         if (pathValue is List<*>) {
-                            @Suppress("UNCHECKED_CAST")
-                            val nodes = pathValue as? List<Node>
-                            if (nodes != null && nodes.isNotEmpty()) {
+                            val nodes = pathValue.filterIsInstance<Node>()
+                            if (nodes.isNotEmpty()) {
                                 collector(nodes)
                             }
                         }

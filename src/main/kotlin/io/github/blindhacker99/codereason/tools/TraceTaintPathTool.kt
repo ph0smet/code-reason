@@ -128,14 +128,17 @@ internal fun traceAndBuildChain(
 private fun extractFirstPath(queryTree: de.fraunhofer.aisec.cpg.query.QueryTree<Boolean>): List<Node>? {
     if (!queryTree.value) return null
 
+    // CPG query paths interleave Node objects with edge objects (e.g.
+    // ContextSensitiveDataflow). filterIsInstance<Node>() drops the edges so
+    // callers see a clean List<Node>; an unchecked cast here would silently
+    // accept an edge as a Node and crash later.
     for (child in queryTree.children) {
         if (child.value == true) {
             for (pathChild in child.children) {
                 val pathValue = pathChild.value
                 if (pathValue is List<*>) {
-                    @Suppress("UNCHECKED_CAST")
-                    val nodes = pathValue as? List<Node>
-                    if (nodes != null && nodes.isNotEmpty()) {
+                    val nodes = pathValue.filterIsInstance<Node>()
+                    if (nodes.isNotEmpty()) {
                         return nodes
                     }
                 }
