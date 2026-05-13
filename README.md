@@ -1,5 +1,7 @@
 # Program analysis for your coding agents.
 
+[![CI](https://github.com/blindhacker99/code-reason/actions/workflows/ci.yml/badge.svg)](https://github.com/blindhacker99/code-reason/actions/workflows/ci.yml)
+
 **code-reason** is an MCP server that gives coding agents real program-analysis reasoning — so they verify data flow, trace evidence chains, and navigate call graphs from ground truth, not guesswork.
 
 Coding agents are good at reading code, but they struggle with whole-program questions:
