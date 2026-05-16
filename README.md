@@ -1,6 +1,6 @@
 # Program analysis for your coding agents.
 
-[![CI](https://github.com/blindhacker99/code-reason/actions/workflows/ci.yml/badge.svg)](https://github.com/blindhacker99/code-reason/actions/workflows/ci.yml)
+[![CI](https://github.com/ph0smet/code-reason/actions/workflows/ci.yml/badge.svg)](https://github.com/ph0smet/code-reason/actions/workflows/ci.yml)
 
 > *Instead of grep-and-guess, provide your agents program analysis capabilities with code-reason.*
 
