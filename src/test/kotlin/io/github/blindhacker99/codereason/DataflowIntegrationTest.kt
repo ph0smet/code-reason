@@ -12,16 +12,15 @@ import de.fraunhofer.aisec.cpg.passes.ProgramDependenceGraphPass
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertTrue
-import org.junit.jupiter.api.Disabled
 
 /**
  * Regression suite for forward DFG taint propagation across four shapes:
  * direct assignment, array element write, List.add/get, Map.put/get.
  *
- * Cases 3 and 4 are gated on Fraunhofer-AISEC/cpg#2748 — function summaries with
- * `to: base` apply at the function-decl level for inferred JDK methods but the
- * call-site reverse propagation edge is missing, so taint does not flow back to
- * the variable through `list.add(taint); list.get(i)` patterns.
+ * Cases 3 and 4 cover function summaries with `to: base` on inferred JDK methods.
+ * These were gated on Fraunhofer-AISEC/cpg#2748 (the call-site reverse propagation
+ * edge was missing); the upstream fix landed in #2781 (commit 562a692, 2026-06-05),
+ * so taint now flows back to the variable through `list.add(taint); list.get(i)`.
  */
 class DataflowIntegrationTest {
 
@@ -94,7 +93,6 @@ class DataflowIntegrationTest {
     }
 
     @Test
-    @Disabled("Pending Fraunhofer-AISEC/cpg#2748 — function summary `to: base` not propagating to call site for inferred Java library methods")
     fun `case 3 List add then get propagates taint`() {
         val result = analyzeFile("fixtures/java/dataflow/CollectionTaint.java")
         val reachable = reachableViaDFG(findSourceCallAtLine(result, 30))
@@ -103,7 +101,6 @@ class DataflowIntegrationTest {
     }
 
     @Test
-    @Disabled("Pending Fraunhofer-AISEC/cpg#2748 — function summary `to: base` not propagating to call site for inferred Java library methods")
     fun `case 4 Map put then get propagates taint`() {
         val result = analyzeFile("fixtures/java/dataflow/CollectionTaint.java")
         val reachable = reachableViaDFG(findSourceCallAtLine(result, 36))
