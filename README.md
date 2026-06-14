@@ -4,7 +4,7 @@
 
 > *Instead of grep-and-guess, provide your agents program analysis capabilities with code-reason.*
 
-**code-reason** is an MCP server that gives coding agents real program-analysis primitives — data-flow reachability, call-graph traversal, evidence-chain construction — so they verify code behavior from ground truth instead of speculation.
+**code-reason** is an MCP server that gives coding agents real program-analysis primitives like data-flow reachability, call-graph traversal, and evidence-chain construction, so they verify code behavior from ground truth instead of speculation.
 
 ## Why code-reason
 
@@ -16,9 +16,9 @@ Coding agents are good at reading code, but they struggle with whole-program que
 
 Without a code-analysis tool, the agent answers these by **manual grep-based tracing.** It can read code, but it can't actually trace data flow, walk a control graph, or verify that user input reaches a sink. Ask any modern coding agent how it traces taint without a tool, and the answer is some variant of *"I read files and follow string matches."*
 
-That works for simple cases. The cracks show on anything non-trivial — aliased variables, inter-procedural flow, sanitization checks, framework-injected inputs. The agent still produces an answer, often with high confidence, but it's reading 6+ files to confirm a single chain, burning context on speculation, and silently missing flows it never thought to grep for. For security-sensitive work, a confident wrong answer is more dangerous than no answer at all — and that's exactly what grep-based tracing produces at scale.
+That works for simple cases. The cracks show on anything non-trivial: aliased variables, inter-procedural flow, sanitization checks, framework-injected inputs. The agent still produces an answer, often with high confidence, but it's reading 6+ files to confirm a single chain, burning context on speculation, and silently missing flows it never thought to grep for. For security-sensitive work, a confident wrong answer is more dangerous than no answer at all, and that's exactly what grep-based tracing produces at scale.
 
-code-reason closes the gap. The agent stays in charge of *what's interesting*; code-reason answers *what's actually true* — backed by a code property graph parsed once and queried cheaply. The result: agents that are more deterministic, more token-efficient, and faster — and agentic security workflows you can actually trust.
+code-reason closes the gap. The agent stays in charge of *what's interesting*; code-reason answers *what's actually true*, backed by a code property graph parsed once and queried cheaply. The result: more deterministic, more token-efficient, faster agents, and agentic security workflows you can actually trust.
 
 Where traditional SAST tools produce findings reports for humans to triage, code-reason exposes the underlying analysis primitives for an agent to drive its own investigation.
 
@@ -31,11 +31,11 @@ From dogfood sessions on real Java and Python codebases:
 - **30-40% fewer agent tokens** on multi-step security reviews, mostly from call-graph queries that would otherwise take 5-10 grep iterations to confirm by hand.
 - **Compact structured answers, not file dumps.** A call-graph query returns reachable methods in JSON; the grep-and-read equivalent forces the agent to read 6+ files to confirm one chain.
 - **One analysis pass per service, unlimited queries.** `reason_analyze_project` builds the CPG once; every other `reason_*` tool queries it cheaply.
-- **Real evidence chains.** `reason_trace_taint_path` returns the full source-to-sink path with intermediate steps and code context — not "looks like SQLi maybe."
+- **Real evidence chains.** `reason_trace_taint_path` returns the full source-to-sink path with intermediate steps and code context, not "looks like SQLi maybe."
 
 ## How it works
 
-code-reason sits between the coding agent and a code property graph. The agent drives — code-reason answers.
+code-reason sits between the coding agent and a code property graph. The agent drives; code-reason answers.
 
 ```
    Coding agent (Claude Code, Cursor, ...)
@@ -52,7 +52,7 @@ code-reason sits between the coding agent and a code property graph. The agent d
 
 A typical loop runs in three phases:
 
-1. **Analyze.** The agent calls `reason_analyze_project`. CPG parses the target codebase into a multi-graph: abstract syntax, control flow, data flow, and evaluation order — all in one queryable structure.
+1. **Analyze.** The agent calls `reason_analyze_project`. CPG parses the target codebase into a multi-graph: abstract syntax, control flow, data flow, and evaluation order, all in one queryable structure.
 
 2. **Query.** The agent calls one or more `reason_*` tools, each of which translates to a focused graph operation: taint propagation, call-graph traversal, data-flow reachability, evidence-chain construction.
 
@@ -76,7 +76,7 @@ code-reason exposes nine MCP tools, grouped by purpose:
 | Catalog scan (convenience) | `reason_list_supported_checks` | Enumerate built-in vulnerability checks |
 | Catalog scan (convenience) | `reason_get_finding_detail` | Description + remediation for a scan finding |
 
-The marquee value is the **navigation** and **data flow** primitives — the agent composes them to answer whole-program questions on its own. The **catalog scan** tools are a convenience baseline for quick first-pass triage; the agent's own reasoning over the primitives is what makes the difference on real codebases.
+The marquee value is the **navigation** and **data flow** primitives; the agent composes them to answer whole-program questions on its own. The **catalog scan** tools are a convenience baseline for quick first-pass triage; the agent's own reasoning over the primitives is what makes the difference on real codebases.
 
 ## Prerequisites
 
@@ -119,7 +119,7 @@ Restart Claude Code; the `reason_*` tools will appear in its tool list.
 
 ## Example workflow
 
-A typical agent-driven session — primitives composing into evidence:
+A typical agent-driven session, with primitives composing into evidence:
 
 1. Agent calls `reason_analyze_project` to build the CPG.
 2. Agent calls `reason_find_entry_points` to enumerate where external input enters the codebase.
@@ -138,7 +138,7 @@ Additional CPG frontends (C/C++, Go, TypeScript, JVM, LLVM, Ruby) can be enabled
 
 ## Status
 
-code-reason is v0.1.0 — early, research-grade. CI runs on every push and pull request. The build is currently pinned to CPG `main-SNAPSHOT`; this will move to a stable `11.x` release once Fraunhofer publishes one to Maven Central.
+code-reason is v0.1.0: early, research-grade. CI runs on every push and pull request. The build is currently pinned to CPG `main-SNAPSHOT`; this will move to a stable `11.x` release once Fraunhofer publishes one to Maven Central.
 
 ## License
 
