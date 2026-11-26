@@ -7,6 +7,7 @@ import io.github.blindhacker99.codereason.tools.addFindEntryPointsTool
 import io.github.blindhacker99.codereason.tools.addGetFindingDetailTool
 import io.github.blindhacker99.codereason.tools.addListChecksTool
 import io.github.blindhacker99.codereason.tools.addQueryDataflowTool
+import io.github.blindhacker99.codereason.tools.addResolveLocationTool
 import io.github.blindhacker99.codereason.tools.addScanInjectionsTool
 import io.github.blindhacker99.codereason.tools.addTraceTaintPathTool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -35,5 +36,6 @@ fun configureServer(): Server {
         addFindCallersTool()
         addFindCalleesTool()
         addQueryDataflowTool()
+        addResolveLocationTool()
     }
 }

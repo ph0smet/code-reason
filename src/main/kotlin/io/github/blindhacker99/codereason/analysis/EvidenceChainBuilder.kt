@@ -12,7 +12,7 @@ import io.github.blindhacker99.codereason.model.ReasoningInfo
 
 class EvidenceChainBuilder {
 
-    fun buildChain(finding: RawFinding): EvidenceChain {
+    fun buildChain(finding: RawFinding, catalogFinding: Boolean = true): EvidenceChain {
         val steps = finding.pathNodes.mapIndexed { index, node ->
             EvidenceStep(
                 step = index + 1,
@@ -21,7 +21,7 @@ class EvidenceChainBuilder {
                 code = node.code,
                 file = node.location?.artifactLocation?.fileName,
                 line = node.location?.region?.startLine,
-                explanation = explainNode(node, index, finding),
+                explanation = explainNode(node, index, finding, catalogFinding),
             )
         }
 
@@ -36,19 +36,23 @@ class EvidenceChainBuilder {
         )
     }
 
-    private fun explainNode(node: Node, index: Int, finding: RawFinding): String {
+    private fun explainNode(node: Node, index: Int, finding: RawFinding, catalogFinding: Boolean): String {
         val isFirst = index == 0
         val isLast = index == finding.pathNodes.size - 1
 
         if (isFirst) {
+            if (!catalogFinding) return "Selected start node for this data-flow trace"
             return "Taint source: ${finding.source.spec.description} — " +
                 "user-controlled input enters here"
         }
 
         if (isLast) {
+            if (!catalogFinding) return "Selected end node reached by the data-flow trace"
             return "Taint sink: ${finding.sink.spec.description} — " +
                 "tainted value reaches dangerous operation"
         }
+
+        if (!catalogFinding) return "Data-flow step through ${node::class.simpleName ?: "node"}"
 
         return when (node) {
             is Call -> "Function call '${node.name.localName}' — tainted data flows through call"
