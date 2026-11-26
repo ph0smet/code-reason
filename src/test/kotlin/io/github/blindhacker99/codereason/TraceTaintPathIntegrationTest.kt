@@ -5,26 +5,27 @@ import de.fraunhofer.aisec.cpg.TranslationConfiguration
 import de.fraunhofer.aisec.cpg.TranslationContext
 import de.fraunhofer.aisec.cpg.TranslationManager
 import de.fraunhofer.aisec.cpg.TranslationResult
+import de.fraunhofer.aisec.cpg.graph.calls
 import de.fraunhofer.aisec.cpg.passes.ControlDependenceGraphPass
 import de.fraunhofer.aisec.cpg.passes.ProgramDependenceGraphPass
 import io.github.blindhacker99.codereason.analysis.EvidenceChainBuilder
+import io.github.blindhacker99.codereason.analysis.traverseDataflow
 import io.github.blindhacker99.codereason.tools.TraceTaintPathPayload
-import io.github.blindhacker99.codereason.tools.findBestNodeAtLocation
+import io.github.blindhacker99.codereason.tools.resolveDataflowNode
 import io.github.blindhacker99.codereason.tools.traceAndBuildChain
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
- * Smoke test for reason_trace_taint_path's source/sink coordinate input mode.
+ * Smoke test for reason_trace_taint_path's data-flow path construction.
  *
  * Locks in two things: (1) the TraceTaintPathPayload field names are wired correctly,
- * so accidental reordering or renaming fails at compile time; (2) the file:line →
- * CPG node resolution + path-building pipeline produces a non-empty EvidenceChain
- * for a known-reachable flow.
+ * so accidental reordering or renaming fails at compile time; (2) selecting
+ * actual DFG nodes produces a non-empty EvidenceChain for a known-reachable flow.
  */
 class TraceTaintPathIntegrationTest {
 
@@ -53,7 +54,7 @@ class TraceTaintPathIntegrationTest {
     }
 
     @Test
-    fun `file colon line input produces evidence chain for direct assignment flow`() {
+    fun `selected dataflow nodes produce a real direct assignment chain`() {
         val result = analyzeFile("fixtures/java/dataflow/CollectionTaint.java")
 
         val payload = TraceTaintPathPayload(
@@ -63,10 +64,10 @@ class TraceTaintPathIntegrationTest {
             sinkLine = 19,
         )
 
-        val sourceNode = findBestNodeAtLocation(result, payload.sourceFile!!, payload.sourceLine!!)
-        assertNotNull(sourceNode, "Source resolution must find a node at CollectionTaint.java:17")
-        val sinkNode = findBestNodeAtLocation(result, payload.sinkFile!!, payload.sinkLine!!)
-        assertNotNull(sinkNode, "Sink resolution must find a node at CollectionTaint.java:19")
+        val sourceNode = result.calls.first { it.name.localName == "source" && it.location?.region?.startLine == 17 }
+        val sinkNode = traverseDataflow(sourceNode, "forward", 5_000).reachable
+            .firstOrNull { it.location?.region?.startLine == payload.sinkLine }
+        assertNotNull(sinkNode, "A data-bearing node at CollectionTaint.java:19 must be reachable")
 
         val chain = traceAndBuildChain(sourceNode, sinkNode, "custom", EvidenceChainBuilder())
 
@@ -74,15 +75,16 @@ class TraceTaintPathIntegrationTest {
         assertEquals(17, chain.source.line)
         assertEquals(19, chain.sink.line)
         assertTrue(chain.steps.isNotEmpty(), "EvidenceChain must contain at least one step")
+        assertTrue(chain.steps.none { it.explanation.contains("user-controlled") || it.explanation.contains("dangerous operation") })
+        assertTrue(!chain.sanitizationEvaluated)
     }
 
     @Test
-    fun `unresolved source coordinate returns null`() {
+    fun `unresolved source coordinate reports an error`() {
         val result = analyzeFile("fixtures/java/dataflow/CollectionTaint.java")
 
-        assertNull(
-            findBestNodeAtLocation(result, "CollectionTaint.java", 9999),
-            "Out-of-range line must return null so the tool can surface a clear error",
-        )
+        assertFailsWith<IllegalArgumentException> {
+            resolveDataflowNode(result, "CollectionTaint.java", 9999, null)
+        }
     }
 }

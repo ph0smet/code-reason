@@ -31,7 +31,7 @@ From dogfood sessions on real Java and Python codebases:
 - **30-40% fewer agent tokens** on multi-step security reviews, mostly from call-graph queries that would otherwise take 5-10 grep iterations to confirm by hand.
 - **Compact structured answers, not file dumps.** A call-graph query returns reachable methods in JSON; the grep-and-read equivalent forces the agent to read 6+ files to confirm one chain.
 - **One analysis pass per service, unlimited queries.** `reason_analyze_project` builds the CPG once; every other `reason_*` tool queries it cheaply.
-- **Real evidence chains.** `reason_trace_taint_path` returns the full source-to-sink path with intermediate steps and code context, not "looks like SQLi maybe."
+- **Evidence when a path is found.** `reason_trace_taint_path` returns intermediate steps and code context for a CPG-confirmed data-flow path. Otherwise it reports that no path was found or that the analysis is incomplete.
 
 ## How it works
 
@@ -62,7 +62,7 @@ The agent provides the *intent* and high-level reasoning; code-reason provides *
 
 ## Tools
 
-code-reason exposes nine MCP tools, grouped by purpose:
+code-reason exposes ten MCP tools, grouped by purpose:
 
 | Group | Tool | Purpose |
 |---|---|---|
@@ -70,11 +70,14 @@ code-reason exposes nine MCP tools, grouped by purpose:
 | Navigation | `reason_find_entry_points` | Locate HTTP handlers, CLI entries, framework hooks |
 | Navigation | `reason_find_callers` | "Who calls this function?" |
 | Navigation | `reason_find_callees` | "What does this function call?" |
+| Navigation | `reason_resolve_location` | List CPG nodes at a source line so an agent can select an exact data-flow node |
 | Data flow | `reason_query_dataflow` | Forward/backward reachability over the data-flow graph |
-| Data flow | `reason_trace_taint_path` | Full source-to-sink evidence chain between any two points |
+| Data flow | `reason_trace_taint_path` | Source-to-sink evidence chain when one exists in the current graph; explicit no-path and incomplete results otherwise |
 | Catalog scan (convenience) | `reason_scan_injections` | Catalog-driven taint analysis (SQLi/XSS/command injection) |
 | Catalog scan (convenience) | `reason_list_supported_checks` | Enumerate built-in vulnerability checks |
 | Catalog scan (convenience) | `reason_get_finding_detail` | Description + remediation for a scan finding |
+
+Data-flow queries accept a file and line or an exact node ID. If a line contains multiple CPG nodes, call `reason_resolve_location` and select the intended value or call argument. Node IDs are valid only for the current analysis. Query results report truncation and recognized unresolved call dead ends; an absent path means no path was found in the current graph, not that runtime flow is impossible.
 
 The marquee value is the **navigation** and **data flow** primitives; the agent composes them to answer whole-program questions on its own. The **catalog scan** tools are a convenience baseline for quick first-pass triage; the agent's own reasoning over the primitives is what makes the difference on real codebases.
 
