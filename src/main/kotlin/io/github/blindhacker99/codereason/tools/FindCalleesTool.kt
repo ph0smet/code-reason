@@ -41,8 +41,7 @@ fun Server.addFindCalleesTool() {
     addTool<FindCalleesPayload>(
         name = "reason_find_callees",
         description =
-            "Find all functions called by a given function. Useful for understanding what a " +
-                "function does and tracing data flow forward through the call graph. " +
+            "Find direct callees of a function. Useful for understanding invocation reachability. " +
                 "Specify either functionName or file+line. Requires reason_analyze_project first.",
     ) { payload ->
         val result = requireAnalysisResult()

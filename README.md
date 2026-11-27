@@ -62,7 +62,7 @@ The agent provides the *intent* and high-level reasoning; code-reason provides *
 
 ## Tools
 
-code-reason exposes ten MCP tools, grouped by purpose:
+code-reason exposes twelve MCP tools, grouped by purpose:
 
 | Group | Tool | Purpose |
 |---|---|---|
@@ -70,6 +70,8 @@ code-reason exposes ten MCP tools, grouped by purpose:
 | Navigation | `reason_find_entry_points` | Locate HTTP handlers, CLI entries, framework hooks |
 | Navigation | `reason_find_callers` | "Who calls this function?" |
 | Navigation | `reason_find_callees` | "What does this function call?" |
+| Navigation | `reason_slice_call_graph` | Bounded transitive caller or callee slice with call-site evidence and truncation |
+| Navigation | `reason_find_call_paths` | Bounded paths from detected entrypoints or a chosen function to a target |
 | Navigation | `reason_resolve_location` | List CPG nodes at a source line so an agent can select an exact data-flow node |
 | Data flow | `reason_query_dataflow` | Forward/backward reachability over the data-flow graph |
 | Data flow | `reason_trace_taint_path` | Source-to-sink evidence chain when one exists in the current graph; explicit no-path and incomplete results otherwise |
@@ -78,6 +80,8 @@ code-reason exposes ten MCP tools, grouped by purpose:
 | Catalog scan (convenience) | `reason_get_finding_detail` | Description + remediation for a scan finding |
 
 Data-flow queries accept a file and line or an exact node ID. If a line contains multiple CPG nodes, call `reason_resolve_location` and select the intended value or call argument. Node IDs are valid only for the current analysis. Query results report truncation and recognized unresolved call dead ends; an absent path means no path was found in the current graph, not that runtime flow is impossible.
+
+Call-graph queries accept a function name, declaration location, or current-analysis function ID. `reason_slice_call_graph` traverses callers or callees up to a chosen depth and function budget. `reason_find_call_paths` starts from detected entrypoints by default, or from a chosen source function. Both return call-site evidence, observed unresolved calls, and explicit truncation. A call path shows possible invocation reachability; use the data-flow tools to ask whether a particular value flows along it.
 
 The marquee value is the **navigation** and **data flow** primitives; the agent composes them to answer whole-program questions on its own. The **catalog scan** tools are a convenience baseline for quick first-pass triage; the agent's own reasoning over the primitives is what makes the difference on real codebases.
 
