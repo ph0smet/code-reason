@@ -70,5 +70,28 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    exclude("**/LabeledBenchmarkTest.class")
     maxHeapSize = "4g"
+}
+
+tasks.register<Test>("benchmark") {
+    description = "Run labeled Java and Python correctness and latency benchmark"
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform()
+    include("**/LabeledBenchmarkTest.class")
+    maxHeapSize = "4g"
+    providers.gradleProperty("jepLibraryPath")
+        .orElse(providers.environmentVariable("JEP_LIBRARY_PATH"))
+        .orNull?.let { path ->
+        jvmArgs("-Djava.library.path=$path")
+    }
+    systemProperty(
+        "benchmark.output",
+        providers.gradleProperty("benchmarkOutput")
+            .orElse(layout.buildDirectory.file("reports/benchmark/results.json").map { it.asFile.absolutePath })
+            .get(),
+    )
+    outputs.upToDateWhen { false }
 }

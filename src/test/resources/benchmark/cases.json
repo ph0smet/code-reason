@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {"id":"java-direct-sqli","path":"java_direct_sqli","language":"java","vulnClass":"sqli","vulnerable":true,"source":{"file":"SearchServlet.java","line":20},"sink":{"file":"SearchServlet.java","line":26}},
+    {"id":"java-helper-sqli","path":"java_helper_sqli","language":"java","vulnClass":"sqli","vulnerable":true,"source":{"file":"UserServlet.java","line":20},"sink":{"file":"UserServlet.java","line":33}},
+    {"id":"java-cross-file-sqli","path":"java_cross_file_sqli","language":"java","vulnClass":"sqli","vulnerable":true,"source":{"file":"OrderController.java","line":17},"sink":{"file":"OrderDao.java","line":22}},
+    {"id":"java-cross-file-sqli-100","path":"java_cross_file_sqli","language":"java","vulnClass":"sqli","vulnerable":true,"source":{"file":"OrderController.java","line":17},"sink":{"file":"OrderDao.java","line":22},"generatedDistractors":100},
+    {"id":"java-cross-file-cmdi","path":"java_cross_file_cmdi","language":"java","vulnClass":"cmdi","vulnerable":true,"source":{"file":"ReportController.java","line":20},"sink":{"file":"ShellRunner.java","line":16}},
+    {"id":"java-parameterized-sqli","path":"java_parameterized_sqli","language":"java","vulnClass":"sqli","vulnerable":false},
+    {"id":"java-constant-query","path":"java_constant_query","language":"java","vulnClass":"sqli","vulnerable":false},
+    {"id":"python-direct-sqli","path":"python_direct_sqli","language":"python","vulnClass":"sqli","vulnerable":true,"source":{"file":"app.py","line":8},"sink":{"file":"app.py","line":11}},
+    {"id":"python-helper-sqli","path":"python_helper_sqli","language":"python","vulnClass":"sqli","vulnerable":true,"source":{"file":"app.py","line":13},"sink":{"file":"app.py","line":9}},
+    {"id":"python-cross-file-sqli","path":"python_cross_file_sqli","language":"python","vulnClass":"sqli","vulnerable":true,"source":{"file":"app.py","line":10},"sink":{"file":"user_repository.py","line":17}},
+    {"id":"python-cross-file-sqli-100","path":"python_cross_file_sqli","language":"python","vulnClass":"sqli","vulnerable":true,"source":{"file":"app.py","line":10},"sink":{"file":"user_repository.py","line":17},"generatedDistractors":100},
+    {"id":"python-cross-file-cmdi","path":"python_cross_file_cmdi","language":"python","vulnClass":"cmdi","vulnerable":true,"source":{"file":"app.py","line":8},"sink":{"file":"job_runner.py","line":4}},
+    {"id":"python-direct-xss","path":"python_direct_xss","language":"python","vulnClass":"xss","vulnerable":true,"source":{"file":"app.py","line":7},"sink":{"file":"app.py","line":8}},
+    {"id":"python-parameterized-sqli","path":"python_parameterized_sqli","language":"python","vulnClass":"sqli","vulnerable":false}
+  ]
+}

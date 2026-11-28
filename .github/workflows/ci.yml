@@ -24,8 +24,33 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build & test
         run: ./gradlew build --no-daemon
+
+      - name: Install Python bridge for benchmark
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cpg-python"
+          "$RUNNER_TEMP/cpg-python/bin/pip" install jep==4.3.1
+          site_packages=$("$RUNNER_TEMP/cpg-python/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')
+          echo "CPG_PYTHON_VIRTUALENV=$RUNNER_TEMP/cpg-python" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=$site_packages" >> "$GITHUB_ENV"
+          echo "JEP_LIBRARY_PATH=$site_packages/jep" >> "$GITHUB_ENV"
+
+      - name: Labeled benchmark
+        run: ./gradlew benchmark --no-daemon
+
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-reason-benchmark
+          path: build/reports/benchmark/results.*
+          if-no-files-found: warn
