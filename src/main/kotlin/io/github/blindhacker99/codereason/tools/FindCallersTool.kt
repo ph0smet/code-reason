@@ -41,8 +41,7 @@ fun Server.addFindCallersTool() {
     addTool<FindCallersPayload>(
         name = "reason_find_callers",
         description =
-            "Find all functions that call a given function. Useful for understanding how a " +
-                "function is used and tracing data flow backwards through the call graph. " +
+            "Find direct callers of a function. Useful for understanding invocation reachability. " +
                 "Specify either functionName or file+line. Requires reason_analyze_project first.",
     ) { payload ->
         val result = requireAnalysisResult()

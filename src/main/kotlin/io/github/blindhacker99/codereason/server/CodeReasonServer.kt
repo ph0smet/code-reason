@@ -8,6 +8,8 @@ import io.github.blindhacker99.codereason.tools.addGetFindingDetailTool
 import io.github.blindhacker99.codereason.tools.addListChecksTool
 import io.github.blindhacker99.codereason.tools.addQueryDataflowTool
 import io.github.blindhacker99.codereason.tools.addResolveLocationTool
+import io.github.blindhacker99.codereason.tools.addSliceCallGraphTool
+import io.github.blindhacker99.codereason.tools.addFindCallPathsTool
 import io.github.blindhacker99.codereason.tools.addScanInjectionsTool
 import io.github.blindhacker99.codereason.tools.addTraceTaintPathTool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -37,5 +39,7 @@ fun configureServer(): Server {
         addFindCalleesTool()
         addQueryDataflowTool()
         addResolveLocationTool()
+        addSliceCallGraphTool()
+        addFindCallPathsTool()
     }
 }
