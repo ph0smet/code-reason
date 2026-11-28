@@ -18,7 +18,7 @@ Without a code-analysis tool, the agent answers these by **manual grep-based tra
 
 That works for simple cases. The cracks show on anything non-trivial: aliased variables, inter-procedural flow, sanitization checks, framework-injected inputs. The agent still produces an answer, often with high confidence, but it's reading 6+ files to confirm a single chain, burning context on speculation, and silently missing flows it never thought to grep for. For security-sensitive work, a confident wrong answer is more dangerous than no answer at all, and that's exactly what grep-based tracing produces at scale.
 
-code-reason closes the gap. The agent stays in charge of *what's interesting*; code-reason answers *what's actually true*, backed by a code property graph parsed once and queried cheaply. The result: more deterministic, more token-efficient, faster agents, and agentic security workflows you can actually trust.
+code-reason gives the agent graph-backed evidence about selected code paths, with explicit limits when the analysis is incomplete. The graph is parsed once and queried repeatedly.
 
 Where traditional SAST tools produce findings reports for humans to triage, code-reason exposes the underlying analysis primitives for an agent to drive its own investigation.
 
@@ -26,9 +26,9 @@ Built on [Fraunhofer AISEC's Code Property Graph](https://github.com/Fraunhofer-
 
 ## What you get
 
-From dogfood sessions on real Java and Python codebases:
+Current capabilities include:
 
-- **30-40% fewer agent tokens** on multi-step security reviews, mostly from call-graph queries that would otherwise take 5-10 grep iterations to confirm by hand.
+- **Bounded call-graph queries** that report the functions and call sites reachable in the current CPG.
 - **Compact structured answers, not file dumps.** A call-graph query returns reachable methods in JSON; the grep-and-read equivalent forces the agent to read 6+ files to confirm one chain.
 - **One analysis pass per service, unlimited queries.** `reason_analyze_project` builds the CPG once; every other `reason_*` tool queries it cheaply.
 - **Evidence when a path is found.** `reason_trace_taint_path` returns intermediate steps and code context for a CPG-confirmed data-flow path. Otherwise it reports that no path was found or that the analysis is incomplete.
@@ -58,7 +58,7 @@ A typical loop runs in three phases:
 
 3. **Reason.** Each tool returns a structured result (locations, paths, confidence, evidence). The agent combines those results with its own contextual reasoning and decides what to ask next.
 
-The agent provides the *intent* and high-level reasoning; code-reason provides *ground-truth answers* against the actual graph. No grep-and-guess, no oversized context dumps.
+The agent provides the *intent* and high-level reasoning; code-reason provides structured evidence from the current graph, including observed resolution limits.
 
 ## Tools
 
@@ -106,6 +106,8 @@ The launcher lands at `build/install/code-reason/bin/code-reason`.
 ```
 
 Integration tests run the full pipeline against small Java and Python fixtures.
+
+For reproducible Java and Python correctness and latency measurements, run the labeled benchmark described in [docs/benchmark.md](docs/benchmark.md). CI publishes its JSON and Markdown report as an artifact. The current corpus exposes both a Java miss and a Python false positive, so catalog scan findings should be verified with the graph query tools.
 
 ## Claude Code setup
 

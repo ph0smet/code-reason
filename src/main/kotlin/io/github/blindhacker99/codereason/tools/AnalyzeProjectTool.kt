@@ -1,14 +1,9 @@
 package io.github.blindhacker99.codereason.tools
 
-import de.fraunhofer.aisec.cpg.InferenceConfiguration
-import de.fraunhofer.aisec.cpg.TranslationConfiguration
-import de.fraunhofer.aisec.cpg.TranslationContext
-import de.fraunhofer.aisec.cpg.TranslationManager
 import de.fraunhofer.aisec.cpg.graph.calls
 import de.fraunhofer.aisec.cpg.graph.functions
 import de.fraunhofer.aisec.cpg.graph.nodes
-import de.fraunhofer.aisec.cpg.passes.ControlDependenceGraphPass
-import de.fraunhofer.aisec.cpg.passes.ProgramDependenceGraphPass
+import io.github.blindhacker99.codereason.analysis.analyzeProjectSources
 import io.github.blindhacker99.codereason.model.AnalyzeProjectPayload
 import io.github.blindhacker99.codereason.model.AnalyzeProjectResult
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -40,27 +35,12 @@ fun Server.addAnalyzeProjectTool() {
 
         val topLevel = if (file.isDirectory) file else file.parentFile
 
-        val config =
-            TranslationConfiguration.builder()
-                .optionalLanguage("de.fraunhofer.aisec.cpg.frontends.java.JavaLanguage")
-                .optionalLanguage("de.fraunhofer.aisec.cpg.frontends.python.PythonLanguage")
-                .topLevel(topLevel)
-                .sourceLocations(sourceFiles.map { File(it) })
-                .defaultPasses()
-                .registerPass<ControlDependenceGraphPass>()
-                .registerPass<ProgramDependenceGraphPass>()
-                .inferenceConfiguration(
-                    InferenceConfiguration.builder().inferRecords(true).build()
-                )
-                .debugParser(true)
-                .build()
-
         // Clean up previous analysis if any
         globalTranslationContext?.executedFrontends?.forEach { it.cleanup() }
 
-        val ctx = TranslationContext(config)
-        val analyzer = TranslationManager.builder().config(config).build()
-        val result = analyzer.analyze(ctx).get()
+        val analysis = analyzeProjectSources(sourceFiles.map(::File), topLevel)
+        val ctx = analysis.context
+        val result = analysis.result
 
         globalAnalysisResult = result
         globalTranslationContext = ctx
